@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpeakPic</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>SpeakPic</h1>
+        <h2>Encode Image</h2>
+        <form method="post" enctype="multipart/form-data" action="/">
+            <div>
+                <label for="file">Choose an image to encode:</label>
+                <input type="file" name="file" id="file" required>
+            </div>
+            <div>
+                <label for="message">Enter your message:</label>
+                <input type="text" name="message" id="message" required>
+            </div>
+            <div>
+                <button type="submit">Encode</button>
+            </div>
+        </form>
+        <hr>
+        <h2>Decode Image</h2>
+        <form method="post" enctype="multipart/form-data" action="/decode">
+            <div>
+                <label for="encoded_file">Choose an encoded image:</label>
+                <input type="file" name="encoded_file" id="encoded_file" required>
+            </div>
+            <div>
+                <button type="submit">Decode</button>
+            </div>
+        </form>
+        {% if decoded_message %}
+        <div>
+            <h3>Decoded Message:</h3>
+            <p>{{ decoded_message }}</p>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
