@@ -20,6 +20,26 @@
                 <input type="text" name="message" id="message" required>
             </div>
             <div>
+                <label for="algorithm">Choose encryption algorithm:</label>
+                <select name="algorithm" id="algorithm" onchange="showKeyFields('encode')">
+                    <option value="none">None</option>
+                    <option value="rsa">RSA</option>
+                    <option value="aes">AES</option>
+                </select>
+            </div>
+            <div id="encodeKeyFields" style="display: none;">
+                <div id="encodeRsaFields" style="display: none;">
+                    <label for="public_key">Public Key:</label>
+                    <input type="text" name="public_key" id="public_key">
+                    <label for="private_key">Private Key:</label>
+                    <input type="text" name="private_key" id="private_key">
+                </div>
+                <div id="encodeAesFields" style="display: none;">
+                    <label for="aes_key">AES Key:</label>
+                    <input type="text" name="aes_key" id="aes_key">
+                </div>
+            </div>
+            <div>
                 <button type="submit">Encode</button>
             </div>
         </form>
@@ -29,6 +49,26 @@
             <div>
                 <label for="encoded_file">Choose an encoded image:</label>
                 <input type="file" name="encoded_file" id="encoded_file" required>
+            </div>
+            <div>
+                <label for="decode_algorithm">Choose decryption algorithm:</label>
+                <select name="decode_algorithm" id="decode_algorithm" onchange="showKeyFields('decode')">
+                    <option value="none">None</option>
+                    <option value="rsa">RSA</option>
+                    <option value="aes">AES</option>
+                </select>
+            </div>
+            <div id="decodeKeyFields" style="display: none;">
+                <div id="decodeRsaFields" style="display: none;">
+                    <label for="decode_public_key">Public Key:</label>
+                    <input type="text" name="decode_public_key" id="decode_public_key">
+                    <label for="decode_private_key">Private Key:</label>
+                    <input type="text" name="decode_private_key" id="decode_private_key">
+                </div>
+                <div id="decodeAesFields" style="display: none;">
+                    <label for="decode_aes_key">AES Key:</label>
+                    <input type="text" name="decode_aes_key" id="decode_aes_key">
+                </div>
             </div>
             <div>
                 <button type="submit">Decode</button>
@@ -41,5 +81,33 @@
         </div>
         {% endif %}
     </div>
+    <script>
+        function showKeyFields(action) {
+            var algorithm, rsaFields, aesFields, keyFields;
+            if (action === 'encode') {
+                algorithm = document.getElementById("algorithm").value;
+                keyFields = document.getElementById("encodeKeyFields");
+                rsaFields = document.getElementById("encodeRsaFields");
+                aesFields = document.getElementById("encodeAesFields");
+            } else {
+                algorithm = document.getElementById("decode_algorithm").value;
+                keyFields = document.getElementById("decodeKeyFields");
+                rsaFields = document.getElementById("decodeRsaFields");
+                aesFields = document.getElementById("decodeAesFields");
+            }
+    
+            keyFields.style.display = "none";
+            rsaFields.style.display = "none";
+            aesFields.style.display = "none";
+    
+            if (algorithm === "rsa") {
+                keyFields.style.display = "block";
+                rsaFields.style.display = "block";
+            } else if (algorithm === "aes") {
+                keyFields.style.display = "block";
+                aesFields.style.display = "block";
+            }
+        }
+    </script>
 </body>
 </html>
