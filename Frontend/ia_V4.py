@@ -75,32 +75,39 @@ def hide_message(image, message):
     return stego_image
 
 
+def retrieve_message(image_path):
 
-
-
-def retrieve_message(stego_image):
-    flat_image = stego_image.reshape(-1, 3)
-    retrieved_message = flat_image[:, -1].astype(int)
-    return clean(retrieved_message)
-
-
-def clean(retrieved_message):
-    end_index = None
-    for i in range(len(retrieved_message) - 1, -1, -1):
-        if retrieved_message[i] == 1:
-            end_index = i
-            break
+    image = Image.open(image_path)
     
-    if end_index is None:
-        raise ValueError("Message non trouvé dans le message récupéré.")
+
+    stego_image = np.array(image)
     
-    hidden_message = retrieved_message[end_index - 15:end_index + 1]  
-    return hidden_message
+
+    if stego_image.ndim != 3 or stego_image.shape[-1] < 3:
+        raise ValueError("L'image n'a pas le format attendu pour la stéganographie.")
+    
+  
+    bit_message = np.unpackbits(stego_image[:, :, 2]).flatten()  
+    bit_message_str = ''.join(map(str, bit_message))
+    return bit_message_str
 
 
-####TEST
-image_path = 'test2.jpg'  # Chemin de l'image à charger et à traiter
-original_message = "0001010101010110"  # Message binaire à cacher dans l'image
 
-img=hide_message(image_path, original_message)
-print(retrieve_message(img))
+#image_path = 'test2.jpg'  # Chemin de l'image à charger et à traiter
+#original_message = "0001010101010110"  # Message binaire à cacher dans l'image
+
+#img=hide_message(image_path, original_message)
+
+#print(retrieve_message(img))
+retrieved_bits=retrieve_message("./uploads/encoded_test21.jpg")
+
+def write_bits_to_file(bits, filename="retrieved_bits.txt"):
+    with open(filename, 'w') as file:
+        file.write(''.join(map(str, bits)))
+
+
+
+
+# Écrire les bits récupérés dans un fichier sur une seule ligne
+write_bits_to_file(retrieved_bits)
+print(f"Bits récupérés écrits dans le fichier 'retrieved_bits.txt'.")

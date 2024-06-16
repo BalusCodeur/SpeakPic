@@ -25,6 +25,9 @@ def base64_to_bits(b64_string):
 
 # Convertir une trame de bits en chaîne de base64
 def bits_to_base64(bit_string):
+    if not isinstance(bit_string, str):
+        raise ValueError("bit_string doit être une chaîne de caractères")
+
     byte_array = bytearray(int(bit_string[i:i+8], 2) for i in range(0, len(bit_string), 8))
     return base64.b64encode(byte_array).decode('utf-8')
 
@@ -97,6 +100,7 @@ if __name__ == "__main__":
     encrypted_message_aes_bits, aes_key_bits = encrypt_message(original_message, aes)
     decrypted_message_aes = decrypt_message(encrypted_message_aes_bits, aes, aes_key_bits)
     print("Message original AES:", original_message)
+
     print("Message chiffré AES (bits):", encrypted_message_aes_bits)
     print("Clé AES (bits):", aes_key_bits)
     print("Message déchiffré AES:", decrypted_message_aes)
