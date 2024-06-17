@@ -5,6 +5,8 @@ from PIL import Image
 import encodedecode as codeur
 import ia_V4 as ia
 import numpy as np
+from io import BytesIO
+from zipfile import ZipFile
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -13,7 +15,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 
 def encrypt_message(message, algorithm, image_path):
-    key, encrypt_message= codeur.encrypt_message(message, algorithm)
+    encrypt_message, key= codeur.encrypt_message(message, algorithm)
     
     image= ia.stegano_bits(image_path, message)
 
@@ -27,7 +29,9 @@ def decode_message(image_path, algorithm, keys):
     #message= codeur.decrypt_message(message_encrypte, algorithm, keys)
     return message
 
-
+@app.route('/')
+def index():
+    return render_template('index.html')
 
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
@@ -35,11 +39,7 @@ def upload_file():
         file = request.files['file']
         message = request.form['message']
         algorithm = request.form['algorithm']
-        keys = {
-            'public_key': request.form.get('public_key'),
-            'private_key': request.form.get('private_key'),
-            'aes_key': request.form.get('aes_key')
-        }
+
 
         filename = secure_filename(file.filename)
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -50,10 +50,31 @@ def upload_file():
         # Sauvegarde de l'image encodée
         encoded_image_path = os.path.join(app.config['UPLOAD_FOLDER'], 'encoded_' + filename)
         encoded_image.save(encoded_image_path)  # Sauvegarde directe sans conversion
-        
-        print(key)
-        return send_file(encoded_image_path, as_attachment=True)
+        key_file_path = os.path.join(app.config['UPLOAD_FOLDER'], 'key.txt')
 
+        with open(key_file_path, 'w') as key_file:
+            if algorithm.lower() == 'aes':
+                key_file.write(f"AES Key: {key}\n")
+            elif algorithm.lower() == 'rsa':
+                print("KEY")
+                print(key)
+                private_key_pem, public_key_pem = key
+                key_file.write(f"Public Key (PEM):\n{public_key_pem}\n")
+                key_file.write(f"Private Key (PEM):\n{private_key_pem}\n")
+            else:
+                raise ValueError("Le type de chiffrement doit être 'aes' ou 'rsa'.")
+        
+        zip_buffer = BytesIO()
+        with ZipFile(zip_buffer, 'w') as zip_file:
+            # Ajouter l'image encodée au fichier ZIP
+            zip_file.write(encoded_image_path, arcname='encoded_image.jpg')
+            # Ajouter la clé au fichier ZIP
+            zip_file.write(key_file_path, arcname='key.txt')
+
+        # Retourner le fichier ZIP en tant que réponse
+        zip_buffer.seek(0)
+
+        return send_file(zip_buffer, as_attachment=True,download_name="Encoded.zip")
     return render_template('index.html')
 
 

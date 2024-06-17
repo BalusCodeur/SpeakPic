@@ -27,18 +27,6 @@
                     <option value="aes">AES</option>
                 </select>
             </div>
-            <div id="encodeKeyFields" style="display: none;">
-                <div id="encodeRsaFields" style="display: none;">
-                    <label for="public_key">Public Key:</label>
-                    <input type="text" name="public_key" id="public_key">
-                    <label for="private_key">Private Key:</label>
-                    <input type="text" name="private_key" id="private_key">
-                </div>
-                <div id="encodeAesFields" style="display: none;">
-                    <label for="aes_key">AES Key:</label>
-                    <input type="text" name="aes_key" id="aes_key">
-                </div>
-            </div>
             <div>
                 <button type="submit">Encode</button>
             </div>
@@ -84,18 +72,13 @@
     <script>
         function showKeyFields(action) {
             var algorithm, rsaFields, aesFields, keyFields;
-            if (action === 'encode') {
-                algorithm = document.getElementById("algorithm").value;
-                keyFields = document.getElementById("encodeKeyFields");
-                rsaFields = document.getElementById("encodeRsaFields");
-                aesFields = document.getElementById("encodeAesFields");
-            } else {
+            if (action === 'decode') {
                 algorithm = document.getElementById("decode_algorithm").value;
                 keyFields = document.getElementById("decodeKeyFields");
                 rsaFields = document.getElementById("decodeRsaFields");
                 aesFields = document.getElementById("decodeAesFields");
+            } else {   
             }
-    
             keyFields.style.display = "none";
             rsaFields.style.display = "none";
             aesFields.style.display = "none";

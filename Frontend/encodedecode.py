@@ -56,7 +56,11 @@ def encrypt_message(message, encryption_type):
             format=serialization.PrivateFormat.TraditionalOpenSSL,
             encryption_algorithm=serialization.NoEncryption()
         ).decode('utf-8')
-        return base64_to_bits(encrypted_message), base64_to_bits(base64.b64encode(private_key_pem.encode('utf-8')).decode('utf-8'))
+        public_key_pem = public_key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        ).decode('utf-8')
+        return base64_to_bits(encrypted_message), (private_key_pem, public_key_pem)
     else:
         raise ValueError("Le type de chiffrement doit être 'aes' ou 'rsa'.")
 
