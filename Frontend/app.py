@@ -13,17 +13,18 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 
 def encrypt_message(message, algorithm, image_path):
-    message_encrypte, key= codeur.encrypt_message(message, algorithm)
-    image= ia.hide_message(image_path, message_encrypte)
+    key, encrypt_message= codeur.encrypt_message(message, algorithm)
+    
+    image= ia.stegano_bits(image_path, message)
 
     return image, key
 
 
 
 def decode_message(image_path, algorithm, keys):
-    message_encrypte= ia.retrieve_message(image_path)
-    print(type(keys))
-    message= codeur.decrypt_message(message_encrypte, algorithm, keys)
+    message= ia.get_bits(image_path)
+   
+    #message= codeur.decrypt_message(message_encrypte, algorithm, keys)
     return message
 
 
@@ -44,14 +45,17 @@ def upload_file():
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(file_path)
 
-        encoded_image, key = encrypt_message(message, algorithm, file_path)         #clef à retourner
+        encoded_image, key = encrypt_message(message, algorithm, file_path)
+
+        # Sauvegarde de l'image encodée
         encoded_image_path = os.path.join(app.config['UPLOAD_FOLDER'], 'encoded_' + filename)
+        encoded_image.save(encoded_image_path)  # Sauvegarde directe sans conversion
         
-        stego_image_uint8 = (encoded_image * 255).astype(np.uint8)
-        Image.fromarray(stego_image_uint8).save(encoded_image_path)
         print(key)
         return send_file(encoded_image_path, as_attachment=True)
+
     return render_template('index.html')
+
 
 
 
@@ -61,9 +65,9 @@ def decode_file():
         file = request.files['encoded_file']
         algorithm = request.form['decode_algorithm']
         keys = {
-            'public_key': request.form.get('public_key'),
-            'private_key': request.form.get('private_key'),
-            'aes_key': request.form.get('aes_key')
+            'public_key': request.form.get('decode_public_key'),
+            'private_key': request.form.get('decode_private_key'),
+            'aes_key': request.form.get('decode_aes_key')
         }
 
         filename = secure_filename(file.filename)

@@ -65,14 +65,20 @@ def decrypt_message(encrypted_message_bits, encryption_type, key_bits):
     encrypted_message = base64.b64decode(bits_to_base64(encrypted_message_bits))
     
     if encryption_type.lower() == 'aes':
+        #key_bits= key_bits.get('aes_key')
         key = base64.b64decode(bits_to_base64(key_bits))
+        if len(key) not in {16, 24, 32}:
+            raise ValueError("AES key must be either 16, 24, or 32 bytes long.")
         iv = encrypted_message[:AES.block_size]
         ct = encrypted_message[AES.block_size:]
         cipher = AES.new(key, AES.MODE_CBC, iv)
+
+        #print(encrypted_message_bits)
         pt = unpad(cipher.decrypt(ct), AES.block_size)
         return pt.decode('utf-8')
     
     elif encryption_type.lower() == 'rsa':
+        #private_key_b64 = key_bits.get('private_key')
         key_pem = base64.b64decode(bits_to_base64(key_bits)).decode('utf-8')
         private_key = serialization.load_pem_private_key(
             key_pem.encode('utf-8'),

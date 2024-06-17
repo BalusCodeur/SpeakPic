@@ -5,7 +5,11 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input
 from PIL import Image  
 
-
+def string_to_binary(string):
+    binary_representation = ""
+    for char in string:
+        binary_representation += format(ord(char), '08b')  # Convertir chaque caractère en 8 bits binaire
+    return binary_representation
 
 def load_and_resize_image(image_path, target_size=(256, 256)):
     try:
@@ -17,7 +21,13 @@ def load_and_resize_image(image_path, target_size=(256, 256)):
         print(f"Error loading or resizing image: {e}")
         return None
 
-
+def binary_to_string(binary_representation):
+    string = ""
+    for i in range(0, len(binary_representation), 8):
+        byte = binary_representation[i:i+8]
+        char = chr(int(byte, 2))  # Convertir chaque octet binaire en caractère ASCII
+        string += char
+    return string
 
 
 def create_autoencoder(input_shape=(256, 256, 3)):
@@ -43,71 +53,64 @@ def create_autoencoder(input_shape=(256, 256, 3)):
 
 
 
-# Fonction pour formater le message binaire
-def format_message(message, target_shape):
-    message_list = [int(bit) for bit in message]
-    target_size = np.prod(target_shape)
-    if len(message_list) < target_size:
-        message_list += [0] * (target_size - len(message_list))
-    formatted_message = np.array(message_list).reshape(target_shape)
-    return formatted_message.astype('float32')
+def stegano_bits(image_path, bit_string):
+    bit_string=string_to_binary(bit_string)
+    im = Image.open(image_path)
+    image=np.copy(im)
+    w, h = im.size
 
-def hide_message(image, message):
+
+    r, g, b = im.split()
+
+    r = list(r.getdata())
+
+
+    msg_length = len(bit_string)
+    msg_length_bin = bin(msg_length)[2:].rjust(8, "0")
+
+
+    for j in range(8):
+        r[j] = 2 * (r[j] // 2) + int(msg_length_bin[j])
+
+
+    for i in range(msg_length):
+        r[i + 8] = 2 * (r[i + 8] // 2) + int(bit_string[i])
+
+
+    nr = Image.new("L", (w, h))
+    nr.putdata(r)
+
+
+    img_new = Image.merge('RGB', (nr, g, b))
+    #autoencoder = create_autoencoder(input_shape=image.shape)
+    #autoencoder.fit(image[np.newaxis, ...], image[np.newaxis, ...], epochs=10, batch_size=1)
+
+    return img_new
     
-    image = load_and_resize_image(image)
-    if image is None:
-        print("Erreur lors du chargement de l'image.")
-        exit()
-   
-    message = np.array([int(bit) for bit in message])
-    stego_image = np.copy(image)
     
-    message_length = len(message)
-    max_length = stego_image.shape[0] * stego_image.shape[1]  # Calculer la longueur maximale du message possible
-
-    if message_length > max_length:
-        raise ValueError("Le message est trop long pour être caché dans cette image.")
-    flat_image = stego_image.reshape(-1, 3)  
-    flat_image[-message_length:, -1] = message  
-    stego_image = flat_image.reshape(stego_image.shape)
-    autoencoder = create_autoencoder(input_shape=image.shape)
-    autoencoder.fit(image[np.newaxis, ...], image[np.newaxis, ...], epochs=10, batch_size=1)    
-    return stego_image
+def get_bits(image_path):
+    im = Image.open(image_path)
+    r, g, b = im.split()
 
 
-def retrieve_message(image_path):
-
-    image = Image.open(image_path)
-    
-
-    stego_image = np.array(image)
-    
-
-    if stego_image.ndim != 3 or stego_image.shape[-1] < 3:
-        raise ValueError("L'image n'a pas le format attendu pour la stéganographie.")
-    
-  
-    bit_message = np.unpackbits(stego_image[:, :, 2]).flatten()  
-    bit_message_str = ''.join(map(str, bit_message))
-    return bit_message_str
+    r = list(r.getdata())
 
 
+    msg_length_bin = ''.join([str(x % 2) for x in r[:8]])
+    msg_length = int(msg_length_bin, 2)
 
-#image_path = 'test2.jpg'  # Chemin de l'image à charger et à traiter
-#original_message = "0001010101010110"  # Message binaire à cacher dans l'image
+    bit_string = ''.join([str(r[i + 8] % 2) for i in range(msg_length)])
 
-#img=hide_message(image_path, original_message)
+    hidden_message = binary_to_string(bit_string)
 
-#print(retrieve_message(img))
-retrieved_bits=retrieve_message("./uploads/encoded_test21.jpg")
+    return hidden_message
 
-def write_bits_to_file(bits, filename="retrieved_bits.txt"):
-    with open(filename, 'w') as file:
-        file.write(''.join(map(str, bits)))
+image_path = "test2.png"
+bit_string_to_hide = "101100101011001011101001"  # Exemple de chaîne de bits à cacher
+stegano_bits(image_path, bit_string_to_hide)
 
+# Récupérer la chaîne de bits cachée dans l'image modifiée
+stegano_image_path = "stegano_test2.png"
+retrieved_bit_string = get_bits(stegano_image_path)
 
-
-
-# Écrire les bits récupérés dans un fichier sur une seule ligne
-write_bits_to_file(retrieved_bits)
-print(f"Bits récupérés écrits dans le fichier 'retrieved_bits.txt'.")
+print("Chaîne de bits récupérée :", retrieved_bit_string) 
