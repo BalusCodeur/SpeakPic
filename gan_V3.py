@@ -6,6 +6,8 @@ from tensorflow.keras.callbacks import ReduceLROnPlateau
 from PIL import Image
 import matplotlib.pyplot as plt
 
+import random
+
 # Dimensions
 image_shape = (64, 64, 3)
 message_dim = 100
@@ -87,41 +89,64 @@ def build_gan(generator, discriminator):
 
 
 gan = build_gan(generator, discriminator)
+def hide_message(image, message, generator):
+    # Prétraitement de l'image et du message
+    image_preprocessed = (image.astype(np.float32) / 127.5) - 1.0
+    message_bits = np.array([float(bit) for bit in message])
 
+    # Génération de bruit aléatoire
+    noise = np.random.normal(0, 1, (1, message_dim))
 
-def train_gan(gan, generator, discriminator, image_folder, epochs, batch_size=128):
+    # Génération de l'image modifiée avec le message caché
+    generated_image = generator.predict([noise, image_preprocessed.reshape((1, 64, 64, 3))])
+
+    # Conversion de l'image générée en un format compatible
+    image_with_message = ((generated_image[0] + 1) * 127.5).astype(np.uint8)
+
+    return image_with_message
+def generate_random_message(min_length, max_length):
+    length = random.randint(min_length, max_length)
+    message = ''.join([random.choice(['0', '1']) for _ in range(length)])
+    return message
+
+def train_gan(gan, generator, discriminator, image_folder, epochs, batch_size=128, min_length=5, max_length=15):
     X_train = load_data(image_folder)
     valid = np.ones((batch_size, 1))
     fake = np.zeros((batch_size, 1))
-    
 
     d_losses = []
     g_losses = []
-    
+
     for epoch in range(epochs):
         idx = np.random.randint(0, X_train.shape[0], batch_size)
         imgs = X_train[idx]
-        
+
         noise = np.random.normal(0, 1, (batch_size, message_dim))
         gen_imgs = generator.predict([noise, imgs])
-        
+
+        # Boucle sur chaque image générée pour décider d'ajouter un message ou non
+        for i in range(batch_size):
+            if random.random() < 0.5:  # 50% de chance d'ajouter un message
+                message = generate_random_message(min_length, max_length)
+                gen_imgs[i] = hide_message(gen_imgs[i], message, generator)
+
         d_loss_real = discriminator.train_on_batch(imgs, valid)
         d_loss_fake = discriminator.train_on_batch(gen_imgs, fake)
         d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
-        
+
         noise = np.random.normal(0, 1, (batch_size, message_dim))
         g_loss = gan.train_on_batch([noise, imgs], valid)
-        
+
         d_losses.append(d_loss[0])
         g_losses.append(g_loss)
-        
+
         print(f"{epoch} [D loss: {d_loss[0]} | D accuracy: {d_loss[1]*100:.2f}%] [G loss: {g_loss}]")
-    
-    # Afficher les courbes de métriques à la fin de l'entraînement
+
     plot_metrics(d_losses, g_losses)
 
 # Fonction pour tracer les métriques
 def plot_metrics(d_losses, g_losses):
+    print(d_losses, g_losses)
     plt.figure(figsize=(10, 5))
     plt.plot(d_losses, label='Discriminator loss', alpha=0.8)
     plt.plot(g_losses, label='Generator loss', alpha=0.8)
@@ -139,48 +164,36 @@ train_gan(gan, generator, discriminator, 'image_test', epochs, batch_size)
 
 
 
-def hide_message(image, message, generator_model):
-   
-    message_bits = np.array([float(bit) for bit in message])
-    
 
-    noise = np.random.normal(0, 1, (1, message_dim))
-    
-    image_preprocessed = (image.astype(np.float32) / 127.5) - 1.0
-    message_preprocessed = message_bits * 2 - 1  
-    
 
-    generated_image = generator_model.predict([noise, image_preprocessed.reshape((1, 64, 64, 3))])
-    
-
-    generated_image = ((generated_image[0] + 1) * 127.5).astype(np.uint8)
-    
-    return generated_image
-
-def extract_message(image_with_message, discriminator_model):
-
+def extract_bits(image_with_message, discriminator_model, num_bits):
+    # Prétraitement de l'image modifiée
     image_preprocessed = (image_with_message.astype(np.float32) / 127.5) - 1.0
     
-    # Prédire la validité de l'image 
-    validity = discriminator_model.predict(image_preprocessed.reshape((1, 64, 64, 3)))
+    # Prédire la validité de l'image avec le discriminateur
+    validity = discriminator_model.predict(image_preprocessed.reshape((1, 64, 64, 3)))[0]
     
+    # Convertir les prédictions en bits (0 ou 1)
+    bits = np.where(validity > 0.5, 1, 0)
+    
+    # Extraire les premiers 'num_bits' bits du message
+    extracted_bits = bits[:num_bits]
+    
+    return extracted_bits
 
-    extracted_message = ''.join(['1' if v > 0.5 else '0' for v in validity[0]])
-    
-    return extracted_message
 
 
 ### test
 message = "1010101010"
 
 
-image_path = 'test.jpg'
+image_path = 'test.png'
 image = np.array(Image.open(image_path).convert('RGB').resize((64, 64)))
 
 image_with_message = hide_message(image, message, generator)
 
 
-extracted_message = extract_message(image_with_message, discriminator)
+extracted_message = extract_bits(image_with_message, discriminator, 10)
 
 print(f"Message caché : {message}")
 print(f"Message extrait : {extracted_message}")
