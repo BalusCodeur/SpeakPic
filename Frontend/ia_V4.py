@@ -54,63 +54,53 @@ def create_autoencoder(input_shape=(256, 256, 3)):
 
 
 def stegano_bits(image_path, bit_string):
-    bit_string=string_to_binary(bit_string)
     im = Image.open(image_path)
+    image = np.array(im)
     image=np.copy(im)
     w, h = im.size
 
-
     r, g, b = im.split()
-
     r = list(r.getdata())
 
-
     msg_length = len(bit_string)
-    msg_length_bin = bin(msg_length)[2:].rjust(8, "0")
+    msg_length_bin = format(msg_length, '032b')  # Stocker la longueur du message en 32 bits
 
-
-    for j in range(8):
+    # Stocker la longueur du message dans les 32 premiers bits
+    for j in range(32):
         r[j] = 2 * (r[j] // 2) + int(msg_length_bin[j])
 
-
+    # Stocker le message dans les bits suivants
     for i in range(msg_length):
-        r[i + 8] = 2 * (r[i + 8] // 2) + int(bit_string[i])
-
+        r[i + 32] = 2 * (r[i + 32] // 2) + int(bit_string[i])
 
     nr = Image.new("L", (w, h))
     nr.putdata(r)
-
-
-    img_new = Image.merge('RGB', (nr, g, b))
     #autoencoder = create_autoencoder(input_shape=image.shape)
     #autoencoder.fit(image[np.newaxis, ...], image[np.newaxis, ...], epochs=10, batch_size=1)
-
+    img_new = Image.merge('RGB', (nr, g, b))
+    img_new.save(image_path)  # Sauvegarder l'image modifiée
     return img_new
+
     
     
 def get_bits(image_path):
     im = Image.open(image_path)
     r, g, b = im.split()
-
-
     r = list(r.getdata())
 
-
-    msg_length_bin = ''.join([str(x % 2) for x in r[:8]])
+    msg_length_bin = ''.join([str(x % 2) for x in r[:32]])
     msg_length = int(msg_length_bin, 2)
 
-    bit_string = ''.join([str(r[i + 8] % 2) for i in range(msg_length)])
+    bit_string = ''.join([str(r[i + 32] % 2) for i in range(msg_length)])
 
-    hidden_message = binary_to_string(bit_string)
+    return bit_string
 
-    return hidden_message
-
-image_path = "test2.png"
-bit_string_to_hide = "101100101011001011101001"  # Exemple de chaîne de bits à cacher
-stegano_bits(image_path, bit_string_to_hide)
+#image_path = "test2.png"
+#bit_string_to_hide = "101100101011001011101001"  # Exemple de chaîne de bits à cacher
+#stegano_bits(image_path, bit_string_to_hide)
 
 # Récupérer la chaîne de bits cachée dans l'image modifiée
-stegano_image_path = "stegano_test2.png"
-retrieved_bit_string = get_bits(stegano_image_path)
+#stegano_image_path = "stegano_test2.png"
+#retrieved_bit_string = get_bits(stegano_image_path)
 
-print("Chaîne de bits récupérée :", retrieved_bit_string) 
+#print("Chaîne de bits récupérée :", retrieved_bit_string) 
