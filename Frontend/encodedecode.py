@@ -63,31 +63,39 @@ def encrypt_message(message, encryption_type):
         return base64_to_bits(encrypted_message), (private_key_pem, public_key_pem)
     else:
         raise ValueError("Le type de chiffrement doit être 'aes' ou 'rsa'.")
-
-# Fonction pour déchiffrer un message
+    
+    
 def decrypt_message(encrypted_message_bits, encryption_type, key_bits):
     encrypted_message = base64.b64decode(bits_to_base64(encrypted_message_bits))
     
     if encryption_type.lower() == 'aes':
-        #key_bits= key_bits.get('aes_key')
-        key = base64.b64decode(bits_to_base64(key_bits))
-        if len(key) not in {16, 24, 32}:
+        key_binary = base64.b64decode(bits_to_base64(key_bits))
+        
+        if len(key_binary) not in {16, 24, 32}:
             raise ValueError("AES key must be either 16, 24, or 32 bytes long.")
-        iv = encrypted_message[:AES.block_size]
-        ct = encrypted_message[AES.block_size:]
-        cipher = AES.new(key, AES.MODE_CBC, iv)
+        
+        iv = encrypted_message[:16]
+        ct = encrypted_message[16:]
+        
+        cipher = AES.new(key_binary, AES.MODE_CBC, iv)
+        try:
+            pt = unpad(cipher.decrypt(ct), AES.block_size)
+            return pt.decode('utf-8')
+        except ValueError as e:
+            print("Error during unpadding or decryption:", e)
+            raise
 
-        #print(encrypted_message_bits)
-        pt = unpad(cipher.decrypt(ct), AES.block_size)
-        return pt.decode('utf-8')
-    
     elif encryption_type.lower() == 'rsa':
-        #private_key_b64 = key_bits.get('private_key')
-        key_pem = base64.b64decode(bits_to_base64(key_bits)).decode('utf-8')
+        private_key_pem,public_key_pem = key_bits
+        #print("public")
+        #print(public_key_pem)
+        #print('Privee')
+        #print(private_key_pem)
         private_key = serialization.load_pem_private_key(
-            key_pem.encode('utf-8'),
+            private_key_pem.encode('utf-8'),
             password=None,
         )
+
         decrypted_message = private_key.decrypt(
             encrypted_message,
             padding.OAEP(
@@ -100,9 +108,10 @@ def decrypt_message(encrypted_message_bits, encryption_type, key_bits):
     else:
         raise ValueError("Le type de chiffrement doit être 'aes' ou 'rsa'.")
 
+
 # Tests
 if __name__ == "__main__":
-    original_message = "Balus est vraiment un petit ostie en ostie d'ostie"
+    original_message = "Ce message est discret"
     aes = "aes"
     rsaa = "rsa"
 
@@ -117,8 +126,9 @@ if __name__ == "__main__":
 
     # Chiffrement RSA
     encrypted_message_rsa_bits, rsa_private_key_bits = encrypt_message(original_message, rsaa)
-    decrypted_message_rsa = decrypt_message(encrypted_message_rsa_bits, rsaa, rsa_private_key_bits)
     print("Message original RSA:", original_message)
     print("Message chiffré RSA (bits):", encrypted_message_rsa_bits)
     print("Clé privée RSA (bits):", rsa_private_key_bits)
+    decrypted_message_rsa = decrypt_message(encrypted_message_rsa_bits, rsaa, rsa_private_key_bits)
+    
     print("Message déchiffré RSA:", decrypted_message_rsa)

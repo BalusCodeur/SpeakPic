@@ -8,12 +8,14 @@
 </head>
 <body>
     <div class="container">
-        <h1>SpeakPic</h1>
+        <div class="logo-container">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
+        </div>
         <h2>Encode Image</h2>
-        <form method="post" enctype="multipart/form-data" action="/">
+        <form id="uploadForm" method="post" enctype="multipart/form-data" action="/">
             <div>
                 <label for="file">Choose an image to encode:</label>
-                <input type="file" name="file" id="file" required>
+                <input type="file" name="file" id="file" accept=".jpg, .png"required>
             </div>
             <div>
                 <label for="message">Enter your message:</label>
@@ -33,10 +35,10 @@
         </form>
         <hr>
         <h2>Decode Image</h2>
-        <form method="post" enctype="multipart/form-data" action="/decode">
+        <form id="decodeForm" method="post" enctype="multipart/form-data" action="/decode">
             <div>
                 <label for="encoded_file">Choose an encoded image:</label>
-                <input type="file" name="encoded_file" id="encoded_file" required>
+                <input type="file" name="encoded_file" id="encoded_file" accept=".jpg" required>
             </div>
             <div>
                 <label for="decode_algorithm">Choose decryption algorithm:</label>
@@ -46,18 +48,9 @@
                     <option value="aes">AES</option>
                 </select>
             </div>
-            <div id="decodeKeyFields" style="display: none;">
-                <div id="decodeRsaFields" style="display: none;">
-                    <label for="decode_public_key">Public Key:</label>
-                    <input type="password" name="decode_public_key" id="decode_public_key">
-                    <label for="decode_private_key">Private Key:</label>
-                    <input type="password" name="decode_private_key" id="decode_private_key">
-                </div>
-                <div id="decodeAesFields" style="display: none;">
-                    <label for="decode_aes_key">AES Key:</label>
-                    <input type="password" name="decode_aes_key" id="decode_aes_key">
-                </div>
-            </div>
+            <div id="decodeKeyFields">
+                <label for="decode_algorithm">Choose Key file:</label>
+                <input type="file" name="decode_key_file" id="decode_key_file" accept=".txt" required>
             <div>
                 <button type="submit">Decode</button>
             </div>
@@ -70,27 +63,55 @@
         {% endif %}
     </div>
     <script>
-        function showKeyFields(action) {
-            var algorithm, rsaFields, aesFields, keyFields;
-            if (action === 'decode') {
-                algorithm = document.getElementById("decode_algorithm").value;
-                keyFields = document.getElementById("decodeKeyFields");
-                rsaFields = document.getElementById("decodeRsaFields");
-                aesFields = document.getElementById("decodeAesFields");
-            } else {   
+        document.getElementById('uploadForm').onsubmit = async function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            try {
+                const response = await fetch('/', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const result = await response.json();
+                    alert(result.error);
+                } else {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = 'Encoded.zip';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                }
+            } catch (error) {
+                alert('L\'opération a échoué');
             }
-            keyFields.style.display = "none";
-            rsaFields.style.display = "none";
-            aesFields.style.display = "none";
-    
-            if (algorithm === "rsa") {
-                keyFields.style.display = "block";
-                rsaFields.style.display = "block";
-            } else if (algorithm === "aes") {
-                keyFields.style.display = "block";
-                aesFields.style.display = "block";
-            }
-        }
+        };
+
+        
     </script>
+    <!--document.getElementById('decodeForm').onsubmit = async function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            try {
+                const response = await fetch('/decode', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const result = await response.json();
+                    alert(result.error);
+                } else {
+                    const result = await response.json();
+                    alert('Decoded Message: ' + result.decoded_message);
+                }
+            } catch (error) {
+                alert('L\'opération a échoué');
+            }
+        };-->
 </body>
 </html>

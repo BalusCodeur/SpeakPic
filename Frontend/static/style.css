@@ -9,11 +9,22 @@ body {
     width: 50%;
     margin: 50px auto;
     padding: 20px;
-    background-color: #fff;
+    background-color: #a5b1f4;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     border-radius: 8px;
 }
 
+
+.logo-container {
+    text-align: center;
+    margin-bottom: 20px; /* Ajout de marge en bas pour l'espace */
+}
+
+.logo-container img {
+    max-width: 200px; /* Ajustez la taille selon vos besoins */
+    display: block;
+    margin: 0 auto;
+}
 h1 {
     text-align: center;
     color: #333;
@@ -38,7 +49,7 @@ input[type="text"] {
 
 button {
     padding: 10px;
-    background-color: #28a745;
+    background-color: #3144be;
     color: white;
     border: none;
     border-radius: 4px;
@@ -47,7 +58,7 @@ button {
 }
 
 button:hover {
-    background-color: #218838;
+    background-color: #2437b1;
 }
 
 .dropdown {
