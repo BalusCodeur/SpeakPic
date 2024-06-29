@@ -55,7 +55,6 @@ def create_autoencoder(input_shape=(256, 256, 3)):
 
 def stegano_bits(image_path, bit_string):
     im = Image.open(image_path)
-    image = np.array(im)
     image=np.copy(im)
     w, h = im.size
 
@@ -81,6 +80,7 @@ def stegano_bits(image_path, bit_string):
     img_new.save(image_path)  # Sauvegarder l'image modifiée
     return img_new
 
+
     
     
 def get_bits(image_path):
@@ -89,8 +89,10 @@ def get_bits(image_path):
     r = list(r.getdata())
 
     msg_length_bin = ''.join([str(x % 2) for x in r[:32]])
+    msg_length_bin = ''.join([str(x % 2) for x in r[:32]])
     msg_length = int(msg_length_bin, 2)
 
+    bit_string = ''.join([str(r[i + 32] % 2) for i in range(msg_length)])
     bit_string = ''.join([str(r[i + 32] % 2) for i in range(msg_length)])
 
     return bit_string
