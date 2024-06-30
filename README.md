@@ -12,3 +12,13 @@ Enfin vous pouvez lancer l'application en allant dans le dossier frontend et en 
 ```bash
 python .\app.py
 ```
+
+## Utilisation
+
+### Encodage
+Pour cacher un message dans une image, choisir une image, inscrire son message et choisir le type d'encryption dans la section Encode.
+
+Cliquer sur le bouton, une archive contenant l'image avec le message ainsi que la ou les clés d'encryption est téléchargée.
+
+### Décodage
+Pour décoder, sélectionner l'image et le fichier `key.txt` dans les champs correspondants et préciser l'algorithme. Le message devrait s'afficher en bas de la fenêtre.
